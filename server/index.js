@@ -1,74 +1,99 @@
 import express from "express";
 import config from "config";
 import chalk from "chalk";
+import sequelize from "./db.js";
+import cors from "cors";
+
 import "@shopify/shopify-api/adapters/node";
-import { shopifyApi, LATEST_API_VERSION, Session } from "@shopify/shopify-api";
+import { shopifyApi } from "@shopify/shopify-api";
+import Products from "./models/models.js";
+import router from "./routes/index.js";
 
 const shopify = shopifyApi({
-  apiKey: "APIKeyFromPartnersDashboard",
-  apiSecretKey: "APISecretFromPartnersDashboard",
-  scopes: ["read_products"],
-  hostName: "ngrok-tunnel-address",
+  apiSecretKey: "App_API_secret_key", // Note: this is the API Secret Key, NOT the API access token
+  isCustomStoreApp: true, // this MUST be set to true (default is false)
+  adminApiAccessToken: "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", // Note: this is the API access token, NOT the API Secret Key
+  isEmbeddedApp: false,
+  hostName: "cpb-new-developer.myshopify.com",
+  // restResources,
 });
+let session = shopify.session.customAppSession(
+  "cpb-new-developer.myshopify.com"
+);
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use("/", router);
 
 const PORT = config.get("port") ?? 8080;
 
 async function start() {
   try {
-    app.get("/auth", async (req, res) => {
-      // The library will automatically redirect the user
-      await shopify.auth.begin({
-        shop: shopify.utils.sanitizeShop(req.query.shop, true),
-        callbackPath: "/auth/callback",
-        isOnline: false,
-        rawRequest: req,
-        rawResponse: res,
-      });
-    });
+    // initDatabase();
 
-    app.get("/auth/callback", async (req, res) => {
-      // The library will automatically set the appropriate HTTP headers
-      const callback = await shopify.auth.callback({
-        rawRequest: req,
-        rawResponse: res,
-      });
-
-      // You can now use callback.session to make API requests
-
-      // res.redirect("/my-apps-entry-page");
-    });
-    const session = Session;
-
-    // console.log(chalk.green(shopify.session.getCurrentId()));
     const client = new shopify.clients.Graphql({ session });
-    const response = await client.query({
+    const data = await client.query({
       data: `query {
     products(first: 10, reverse: true) {
       edges {
         node {
           id
           title
-          handle
-          resourcePublicationOnCurrentPublication {
-            publication {
-              name
-              id
+          bodyHtml          
+          images(first:10, reverse: true){
+            nodes{
+              src
             }
-            publishDate
-            isPublished
+            
           }
         }
       }
     }
   }`,
     });
-    console.log(client);
 
-    // initDatabase();
+    app.get("/", async (req, res) => {
+      try {
+        const data = await client.query({
+          data: `query {
+    products(first: 10, reverse: true) {
+      edges {
+        node {
+          id
+          title
+          bodyHtml          
+          images(first:1,, reverse: true){
+            nodes{
+              src
+            }
+            
+          }
+        }
+      }
+    }
+  }`,
+        });
+
+        // res.status(200).send(data.body.data.products.edges);
+      } catch (error) {}
+    });
+
+    await sequelize.authenticate();
+    await sequelize.sync();
+
+    // console.log(data.body.data.products.edges);
+    // console.log(node.node.id);
+    data.body.data.products.edges.map((node) =>
+      Products.create({
+        idProduct: node.node.id,
+        title: node.node.title,
+        bodyHtml: node.node.bodyHtml,
+        imageSource: node.node.images.nodes[0].src,
+      })
+    );
+
     app.listen(PORT, () =>
       console.log(`Server has been started on port ${PORT}...`)
     );

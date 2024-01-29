@@ -1,0 +1,9 @@
+.card {
+  border: 1px solid gray;
+  background-color: rgb(240, 238, 238);
+  border-radius: 2rem;
+  margin-top: 1rem;
+}
+.canvas {
+  width: 15rem;
+}

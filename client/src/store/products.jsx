@@ -3,7 +3,7 @@ import ProductService from "../services/product.service";
 
 const productsSlice = createSlice({
   name: "products",
-  initialState: { entities: null, isLoading: true },
+  initialState: { entities: null, isLoading: true, error: null },
   reducers: {
     productsRequested: (state) => {
       state.isLoading = true;
@@ -33,12 +33,10 @@ export const loadProducts = () => async (dispatch) => {
 };
 
 export const getProducts = () => (state) => {
-  if (state.products) {
-    return state.products.entities;
-  } else return "not loaded escho";
+  // if (state.products) {
+  return state.products.entities;
+  // } else return "not loaded escho";
 };
-export const getIsLoading = () => (state) => {
-  return state.isLoading;
-};
+export const getIsLoading = () => (state) => state.products.isLoading;
 
 export default productsReducer;

@@ -1,10 +1,10 @@
 для запуска приложения
 
 
-cd server
+1. cd server
 
-npm run serve
+2. npm run serve
 
-cd ../client
+3. cd ../client
 
-npm start
+4. npm start

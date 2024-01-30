@@ -1,3 +1,6 @@
+для запуска приложения
+
+
 cd server
 
 npm run serve
